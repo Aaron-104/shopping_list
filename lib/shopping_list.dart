@@ -13,23 +13,44 @@ class _shopping_listState extends State<shopping_list> {
   bool cb = false;
   String itemName;
 
-
-  CollectionReference itemReference = FirebaseFirestore.instance
-      .collection("MyLists");
+  CollectionReference itemReference =
+      FirebaseFirestore.instance.collection("MyLists");
   // .doc(widget.argument[1])
   // .collection("ShoppingItem");
 
-  addItem(String id) async{
+  addItem(String id) async {
     //Map
     Map<String, dynamic> items = {"itemName": itemName};
-    await itemReference.doc(id).collection("ShoppingItem").add(items).whenComplete(() {
+    await itemReference
+        .doc(id)
+        .collection("ShoppingItem")
+        .add(items)
+        .whenComplete(() {
       print("$itemName created");
     });
   }
 
   Future removeItem(String id1, id2) async {
-    await itemReference.doc(id1).collection("ShoppingItem").doc(id2).delete().whenComplete(() {
+    await itemReference
+        .doc(id1)
+        .collection("ShoppingItem")
+        .doc(id2)
+        .delete()
+        .whenComplete(() {
       print("$id2 deleted");
+    });
+  }
+
+  modifyItem(String id1, id2) async {
+    //Map
+    Map<String, dynamic> items = {"itemName": itemName};
+    await itemReference
+        .doc(id1)
+        .collection("ShoppingItem")
+        .doc(id2)
+        .set(items)
+        .whenComplete(() {
+      print("$itemName modified");
     });
   }
 
@@ -58,7 +79,7 @@ class _shopping_listState extends State<shopping_list> {
                     SizedBox(height: 20.0, width: 20.0),
                     TextFormField(
                       validator: (val) =>
-                      val.isEmpty ? 'Enter a new item' : null,
+                          val.isEmpty ? 'Enter a new item' : null,
                       onChanged: (val) => setState(() => itemName = val),
                     ),
                     Padding(
@@ -73,7 +94,6 @@ class _shopping_listState extends State<shopping_list> {
 
                           Navigator.of(context).pop();
                           //will remove alert dialog after adding
-
                         },
                       ),
                     ),
@@ -116,43 +136,55 @@ class _shopping_listState extends State<shopping_list> {
                   itemCount: snapshots.data.docs
                       .length, //decides number of time itemBuilder called
                   itemBuilder: (context, index) {
-
                     return Dismissible(
                       onDismissed: (direction) {
-                        removeItem(widget.argument[0],snapshots.data.docs[index].id);
+                        removeItem(
+                            widget.argument[0], snapshots.data.docs[index].id);
                       },
                       key: Key(index.toString()),
                       child: Card(
                         margin: EdgeInsets.all(2), //space between each tile
                         child: ListTile(
-                          // leading: Checkbox(
-                          //   checkColor: Colors.white,
-                          //   value: cb,
-                          //   onChanged: (bool value) {
-                          //     setState(() {
-                          //       cb = value;
-                          //     });
-                          //   },
-                          // ),
                           title: Text(
                             snapshots.data.docs[index]['itemName'],
-                            // style: TextStyle(
-                            //     decoration: cb == true ? TextDecoration.none : TextDecoration.lineThrough,
-                            // )
                           ),
                           trailing: IconButton(
-                              icon: Icon(
-                                Icons.settings_applications_outlined,
-                                color: Colors.black,
-                              ),
-                              onPressed: () async {
-                                // await deleteTodos(snapshots.data.docs[index].id);
-                              }),
-                          // onTap: (){
-                          //     setState(() {
-                          //       cb = false;
-                          //     });
-                          // },
+                            icon: Icon(
+                              Icons.settings_applications_outlined,
+                              color: Colors.black,
+                            ),
+                            onPressed: () {
+                              showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8)),
+                                      title: Text("Modify Item"),
+                                      content: TextFormField(
+                                        initialValue: snapshots.data.docs[index]
+                                            ['itemName'],
+                                        onChanged: (String value) {
+                                          //After insert value
+                                          itemName = value;
+                                        },
+                                      ),
+                                      actions: <Widget>[
+                                        TextButton(
+                                          onPressed: () {
+                                            modifyItem(widget.argument[0],
+                                                snapshots.data.docs[index].id);
+                                            Navigator.of(context).pop();
+                                            //will remove alert dialog after adding
+                                          },
+                                          child: Text("Done"),
+                                        ),
+                                      ],
+                                    );
+                                  });
+                            },
+                          ),
                         ),
                       ),
                     );

@@ -10,8 +10,8 @@ void main() async {
     initialRoute: '/',
     routes: {
       '/': (context) => MyApp(),
-      '/shopping_list': (context)
-      => shopping_list(argument: ModalRoute.of(context).settings.arguments),
+      '/shopping_list': (context) =>
+          shopping_list(argument: ModalRoute.of(context).settings.arguments),
       //'/itemAdd' : (context) => itemAdd(),
     },
     debugShowCheckedModeBanner: false,
@@ -23,7 +23,6 @@ void main() async {
 }
 
 class MyApp extends StatefulWidget {
-
   @override
   _MyAppState createState() => _MyAppState();
 }
@@ -32,11 +31,11 @@ class _MyAppState extends State<MyApp> {
   String shoppingList;
 
   CollectionReference todoReference =
-  FirebaseFirestore.instance.collection("MyLists");
+      FirebaseFirestore.instance.collection("MyLists");
 
   createTodos() {
     //Map
-    Map<String, dynamic> todos = {"shoppingList" : shoppingList};
+    Map<String, dynamic> todos = {"shoppingList": shoppingList};
     todoReference.add(todos).whenComplete(() {
       print("$shoppingList created");
     });
@@ -103,8 +102,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context, snapshots) {
             if (snapshots.hasData && !snapshots.hasError) {
               print("yes");
-              print(snapshots
-                  .data.docs.length);
+              print(snapshots.data.docs.length);
               return ListView.builder(
                   shrinkWrap: true,
                   itemCount: snapshots.data.docs.length,
@@ -121,26 +119,29 @@ class _MyAppState extends State<MyApp> {
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8)),
                         child: ListTile(
-                          title: Text(snapshots.data.docs[index]["shoppingList"]),
+                          title:
+                              Text(snapshots.data.docs[index]["shoppingList"]),
                           trailing: IconButton(
                               icon: Icon(
                                 Icons.delete,
                                 color: Colors.red,
                               ),
                               onPressed: () async {
-                                await deleteTodos(snapshots.data.docs[index].id);
+                                await deleteTodos(
+                                    snapshots.data.docs[index].id);
                               }),
                           onTap: () {
-                            Navigator.pushNamed(context,
-                                '/shopping_list',
-                                arguments: [snapshots.data.docs[index].id,
-                                  snapshots.data.docs[index]["shoppingList"]]);
+                            Navigator.pushNamed(context, '/shopping_list',
+                                arguments: [
+                                  snapshots.data.docs[index].id,
+                                  snapshots.data.docs[index]["shoppingList"]
+                                ]);
                           },
                         ),
                       ),
                     );
                   });
-            }else{
+            } else {
               return Container();
             }
           }),
