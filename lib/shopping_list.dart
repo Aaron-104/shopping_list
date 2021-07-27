@@ -1,0 +1,166 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+
+class shopping_list extends StatefulWidget {
+  dynamic argument;
+  shopping_list({this.argument});
+
+  @override
+  _shopping_listState createState() => _shopping_listState();
+}
+
+class _shopping_listState extends State<shopping_list> {
+  bool cb = false;
+  String itemName;
+
+
+  CollectionReference itemReference = FirebaseFirestore.instance
+      .collection("MyLists");
+  // .doc(widget.argument[1])
+  // .collection("ShoppingItem");
+
+  addItem(String id) async{
+    //Map
+    Map<String, dynamic> items = {"itemName": itemName};
+    await itemReference.doc(id).collection("ShoppingItem").add(items).whenComplete(() {
+      print("$itemName created");
+    });
+  }
+
+  Future removeItem(String id1, id2) async {
+    await itemReference.doc(id1).collection("ShoppingItem").doc(id2).delete().whenComplete(() {
+      print("$id2 deleted");
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    void _showSettingsPanel() {
+      //to display setting form to appear from bottom
+      showModalBottomSheet(
+          context: context,
+          builder: (context) {
+            return Container(
+              //set the height
+              padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 80.0),
+              child: Form(
+                child: Column(
+                  children: <Widget>[
+                    Container(
+                      child: Text(
+                        'ADD NEW ITEM',
+                        style: TextStyle(
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 20.0, width: 20.0),
+                    TextFormField(
+                      validator: (val) =>
+                      val.isEmpty ? 'Enter a new item' : null,
+                      onChanged: (val) => setState(() => itemName = val),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(30.0),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          primary: Colors.lightBlueAccent[600],
+                        ),
+                        child: Text('Add'),
+                        onPressed: () {
+                          addItem(widget.argument[0]);
+
+                          Navigator.of(context).pop();
+                          //will remove alert dialog after adding
+
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              //itemAdd(),
+            );
+          });
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.blue[100],
+      appBar: AppBar(
+        title: Text(widget.argument[1].toString()),
+        backgroundColor: Colors.blue,
+        elevation: 0.0,
+        //list of widget to display in a row after title
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.add_comment_outlined),
+            onPressed: () => _showSettingsPanel(),
+          )
+        ],
+      ),
+      body: StreamBuilder(
+          stream: FirebaseFirestore.instance
+              .collection("MyLists")
+              .doc(widget.argument[0])
+              .collection("ShoppingItem")
+              .snapshots(),
+          builder: (context, snapshots) {
+            if (snapshots.hasData && !snapshots.hasError) {
+              print("yes");
+              print(snapshots
+                  .data.docs.length); //to view how many items via console
+
+              return ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: snapshots.data.docs
+                      .length, //decides number of time itemBuilder called
+                  itemBuilder: (context, index) {
+
+                    return Dismissible(
+                      onDismissed: (direction) {
+                        removeItem(widget.argument[0],snapshots.data.docs[index].id);
+                      },
+                      key: Key(index.toString()),
+                      child: Card(
+                        margin: EdgeInsets.all(2), //space between each tile
+                        child: ListTile(
+                          // leading: Checkbox(
+                          //   checkColor: Colors.white,
+                          //   value: cb,
+                          //   onChanged: (bool value) {
+                          //     setState(() {
+                          //       cb = value;
+                          //     });
+                          //   },
+                          // ),
+                          title: Text(
+                            snapshots.data.docs[index]['itemName'],
+                            // style: TextStyle(
+                            //     decoration: cb == true ? TextDecoration.none : TextDecoration.lineThrough,
+                            // )
+                          ),
+                          trailing: IconButton(
+                              icon: Icon(
+                                Icons.settings_applications_outlined,
+                                color: Colors.black,
+                              ),
+                              onPressed: () async {
+                                // await deleteTodos(snapshots.data.docs[index].id);
+                              }),
+                          // onTap: (){
+                          //     setState(() {
+                          //       cb = false;
+                          //     });
+                          // },
+                        ),
+                      ),
+                    );
+                  });
+            } else {
+              return Container();
+            }
+          }),
+    );
+  }
+}

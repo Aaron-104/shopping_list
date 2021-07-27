@@ -4,20 +4,18 @@ class DatabaseService {
   final String uid;
   DatabaseService({this.uid}); //constructor
 
-  //collection reference
-  final CollectionReference brewCollection =
-  FirebaseFirestore.instance.collection('brews');
+  //collection reference to items
+  final CollectionReference listCollection =
+  FirebaseFirestore.instance.collection('items'); //if collection not exist, firestore will create`
 
   //***************
-  Future updateUserData(String sugars, String name, int strength) async {
-    return await brewCollection.doc(uid).set({
-      'sugars': sugars,
-      'name': name,
-      'strength': strength,
+  Future createTitle(String itemN) async {
+    return await listCollection.add({
+      'itemN' : itemN,
     });
   }
 
-  //brew list from snapshot
+  /*//brew list from snapshot
   //returns an iterable, so need convert to list
   //to work with it to output data in UI
   List<Brew> _brewListFromSnapshot(QuerySnapshot snapshot) {
@@ -54,5 +52,5 @@ class DatabaseService {
   Stream<UserData> get userData{
     return brewCollection.doc(uid).snapshots()
         .map(_userDataFromSnapshot);
-  }
+  }*/
 }
