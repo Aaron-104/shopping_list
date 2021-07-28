@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shopping_list/loading.dart';
 import 'package:shopping_list/shopping_list.dart';
 
 void main() async {
@@ -59,11 +60,13 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
         title: Text("Shopping List"),
+        backgroundColor: Colors.amber[600],
       ),
       floatingActionButton: FloatingActionButton(
-          backgroundColor: Colors.lightBlue,
+          backgroundColor: Colors.amber[600],
           onPressed: () {
             showDialog(
                 context: context,
@@ -98,7 +101,8 @@ class _MyAppState extends State<MyApp> {
           )),
       //NEED USE streambuilder to use firestore instance
       body: StreamBuilder(
-          stream: FirebaseFirestore.instance.collection("MyLists").snapshots(),
+          stream: FirebaseFirestore.instance.collection("MyLists")
+              .orderBy("shoppingList").snapshots(),
           builder: (context, snapshots) {
             if (snapshots.hasData && !snapshots.hasError) {
               print("yes");
@@ -114,6 +118,7 @@ class _MyAppState extends State<MyApp> {
                       },
                       key: Key(index.toString()),
                       child: Card(
+                        color: Colors.amberAccent[100],
                         elevation: 4, //elevation of each tile
                         margin: EdgeInsets.all(8), //space between each tile
                         shape: RoundedRectangleBorder(
@@ -124,7 +129,7 @@ class _MyAppState extends State<MyApp> {
                           trailing: IconButton(
                               icon: Icon(
                                 Icons.delete,
-                                color: Colors.red,
+                                color: Colors.amberAccent[700],
                               ),
                               onPressed: () async {
                                 await deleteTodos(
@@ -142,7 +147,7 @@ class _MyAppState extends State<MyApp> {
                     );
                   });
             } else {
-              return Container();
+              return Loading();
             }
           }),
     );

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:shopping_list/loading.dart';
 
 class shopping_list extends StatefulWidget {
   dynamic argument;
@@ -86,7 +87,7 @@ class _shopping_listState extends State<shopping_list> {
                       padding: EdgeInsets.all(30.0),
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          primary: Colors.lightBlueAccent[600],
+                          primary: Colors.amber[600],
                         ),
                         child: Text('Add'),
                         onPressed: () {
@@ -106,10 +107,10 @@ class _shopping_listState extends State<shopping_list> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.blue[100],
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
         title: Text(widget.argument[1].toString()),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.amber[600],
         elevation: 0.0,
         //list of widget to display in a row after title
         actions: <Widget>[
@@ -124,6 +125,7 @@ class _shopping_listState extends State<shopping_list> {
               .collection("MyLists")
               .doc(widget.argument[0])
               .collection("ShoppingItem")
+              .orderBy("itemName")
               .snapshots(),
           builder: (context, snapshots) {
             if (snapshots.hasData && !snapshots.hasError) {
@@ -136,61 +138,69 @@ class _shopping_listState extends State<shopping_list> {
                   itemCount: snapshots.data.docs
                       .length, //decides number of time itemBuilder called
                   itemBuilder: (context, index) {
-                    return Dismissible(
-                      onDismissed: (direction) {
-                        removeItem(
-                            widget.argument[0], snapshots.data.docs[index].id);
-                      },
-                      key: Key(index.toString()),
-                      child: Card(
-                        margin: EdgeInsets.all(2), //space between each tile
-                        child: ListTile(
-                          title: Text(
-                            snapshots.data.docs[index]['itemName'],
+                    return Card(
+                      color: Colors.amberAccent[100],
+                      margin: EdgeInsets.all(2), //space between each tile
+                      child: ListTile(
+                        title: Text(
+                          snapshots.data.docs[index]['itemName'],
+                        ),
+                        trailing: IconButton(
+                          icon: Icon(
+                            Icons.settings_applications_outlined,
+                            color: Colors.black,
                           ),
-                          trailing: IconButton(
-                            icon: Icon(
-                              Icons.settings_applications_outlined,
-                              color: Colors.black,
-                            ),
-                            onPressed: () {
-                              showDialog(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8)),
-                                      title: Text("Modify Item"),
-                                      content: TextFormField(
-                                        initialValue: snapshots.data.docs[index]
-                                            ['itemName'],
-                                        onChanged: (String value) {
-                                          //After insert value
-                                          itemName = value;
+                          onPressed: () {
+                            showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(8)),
+                                    title: Text("Modify Item"),
+                                    content: TextFormField(
+                                      initialValue: snapshots.data.docs[index]
+                                          ['itemName'],
+                                      onChanged: (String value) {
+                                        //After insert value
+                                        itemName = value;
+                                      },
+                                    ),
+                                    actions: <Widget>[
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          removeItem(widget.argument[0],
+                                              snapshots.data.docs[index].id);
+                                          Navigator.of(context).pop();
                                         },
-                                      ),
-                                      actions: <Widget>[
-                                        TextButton(
-                                          onPressed: () {
-                                            modifyItem(widget.argument[0],
-                                                snapshots.data.docs[index].id);
-                                            Navigator.of(context).pop();
-                                            //will remove alert dialog after adding
-                                          },
-                                          child: Text("Done"),
+                                        child: Text("Delete"),
+                                        style: ElevatedButton.styleFrom(
+                                          primary: Colors.red,
                                         ),
-                                      ],
-                                    );
-                                  });
-                            },
-                          ),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          modifyItem(widget.argument[0],
+                                              snapshots.data.docs[index].id);
+                                          Navigator.of(context).pop();
+                                          //will remove alert dialog after adding
+                                        },
+                                        child: Text("Done"),
+                                        style: ElevatedButton.styleFrom(
+                                          primary: Colors.amber[600],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                });
+                          },
                         ),
                       ),
                     );
                   });
             } else {
-              return Container();
+              return Loading();
             }
           }),
     );
