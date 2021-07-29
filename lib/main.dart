@@ -4,6 +4,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:shopping_list/loading.dart';
 import 'package:shopping_list/shopping_list.dart';
 
+import 'decoration.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -13,7 +15,6 @@ void main() async {
       '/': (context) => MyApp(),
       '/shopping_list': (context) =>
           shopping_list(argument: ModalRoute.of(context).settings.arguments),
-      //'/itemAdd' : (context) => itemAdd(),
     },
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
@@ -30,14 +31,24 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String shoppingList;
+  String deletedList;
 
   CollectionReference todoReference =
       FirebaseFirestore.instance.collection("MyLists");
 
-  createTodos() {
+  CollectionReference historyReference =
+      FirebaseFirestore.instance.collection("HistoryList");
+
+  createTodos() async {
     //Map
-    Map<String, dynamic> todos = {"shoppingList": shoppingList};
-    todoReference.add(todos).whenComplete(() {
+    Map<String, dynamic> shopList = {
+      "shoppingList": shoppingList,
+      "created": FieldValue.serverTimestamp()
+    };
+    await todoReference.add(shopList).whenComplete(() {
+      print("$shoppingList created");
+    });
+    await historyReference.doc(shoppingList).set(shopList).whenComplete(() {
       print("$shoppingList created");
     });
   }
@@ -47,15 +58,6 @@ class _MyAppState extends State<MyApp> {
       print("$id deleted");
     });
   }
-  //
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   Firebase.initializeApp().whenComplete(() {
-  //     print("completed");
-  //     setState(() {});
-  //   });
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +78,7 @@ class _MyAppState extends State<MyApp> {
                         borderRadius: BorderRadius.circular(8)),
                     title: Text("Add Shopping List"),
                     content: TextField(
+                      decoration: textInputDecoration,
                       onChanged: (String value) {
                         //After insert value
                         shoppingList = value;
@@ -89,7 +92,12 @@ class _MyAppState extends State<MyApp> {
                           Navigator.of(context).pop();
                           //will remove alert dialog after adding
                         },
-                        child: Text("Add"),
+                        child: Text(
+                          "Add",
+                          style: TextStyle(
+                            color: Colors.black,
+                          ),
+                        ),
                       ),
                     ],
                   );
@@ -101,8 +109,10 @@ class _MyAppState extends State<MyApp> {
           )),
       //NEED USE streambuilder to use firestore instance
       body: StreamBuilder(
-          stream: FirebaseFirestore.instance.collection("MyLists")
-              .orderBy("shoppingList").snapshots(),
+          stream: FirebaseFirestore.instance
+              .collection("MyLists")
+              .orderBy("created")
+              .snapshots(),
           builder: (context, snapshots) {
             if (snapshots.hasData && !snapshots.hasError) {
               print("yes");
@@ -112,37 +122,29 @@ class _MyAppState extends State<MyApp> {
                   itemCount: snapshots.data.docs.length,
                   itemBuilder: (context, index) {
                     //DocumentSnapshot documentSnapshot = snapshots.data.docs[index];
-                    return Dismissible(
-                      onDismissed: (direction) {
-                        deleteTodos(snapshots.data.docs[index].id);
-                      },
-                      key: Key(index.toString()),
-                      child: Card(
-                        color: Colors.amberAccent[100],
-                        elevation: 4, //elevation of each tile
-                        margin: EdgeInsets.all(8), //space between each tile
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        child: ListTile(
-                          title:
-                              Text(snapshots.data.docs[index]["shoppingList"]),
-                          trailing: IconButton(
-                              icon: Icon(
-                                Icons.delete,
-                                color: Colors.amberAccent[700],
-                              ),
-                              onPressed: () async {
-                                await deleteTodos(
-                                    snapshots.data.docs[index].id);
-                              }),
-                          onTap: () {
-                            Navigator.pushNamed(context, '/shopping_list',
-                                arguments: [
-                                  snapshots.data.docs[index].id,
-                                  snapshots.data.docs[index]["shoppingList"]
-                                ]);
-                          },
-                        ),
+                    return Card(
+                      color: Colors.amberAccent[100],
+                      elevation: 4, //elevation of each tile
+                      margin: EdgeInsets.all(8), //space between each tile
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      child: ListTile(
+                        title: Text(snapshots.data.docs[index]["shoppingList"]),
+                        trailing: IconButton(
+                            icon: Icon(
+                              Icons.delete,
+                              color: Colors.amberAccent[700],
+                            ),
+                            onPressed: () async {
+                              await deleteTodos(snapshots.data.docs[index].id);
+                            }),
+                        onTap: () {
+                          Navigator.pushNamed(context, '/shopping_list',
+                              arguments: [
+                                snapshots.data.docs[index].id,
+                                snapshots.data.docs[index]["shoppingList"]
+                              ]);
+                        },
                       ),
                     );
                   });

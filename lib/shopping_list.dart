@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shopping_list/loading.dart';
 
+import 'decoration.dart';
+
 class shopping_list extends StatefulWidget {
   dynamic argument;
   shopping_list({this.argument});
@@ -16,14 +18,26 @@ class _shopping_listState extends State<shopping_list> {
 
   CollectionReference itemReference =
       FirebaseFirestore.instance.collection("MyLists");
-  // .doc(widget.argument[1])
-  // .collection("ShoppingItem");
 
-  addItem(String id) async {
+  CollectionReference historyReference =
+  FirebaseFirestore.instance.collection("HistoryList");
+
+  addItem(String id, String shopList) async {
     //Map
-    Map<String, dynamic> items = {"itemName": itemName};
+    Map<String, dynamic> items = {
+      "itemName": itemName,
+      "created": FieldValue.serverTimestamp(),
+      "checkValue": cb
+    };
     await itemReference
         .doc(id)
+        .collection("ShoppingItem")
+        .add(items)
+        .whenComplete(() {
+      print("$itemName created");
+    });
+    await historyReference
+        .doc(shopList)
         .collection("ShoppingItem")
         .add(items)
         .whenComplete(() {
@@ -43,16 +57,19 @@ class _shopping_listState extends State<shopping_list> {
   }
 
   modifyItem(String id1, id2) async {
-    //Map
-    Map<String, dynamic> items = {"itemName": itemName};
     await itemReference
         .doc(id1)
         .collection("ShoppingItem")
         .doc(id2)
-        .set(items)
-        .whenComplete(() {
-      print("$itemName modified");
-    });
+        .update({"itemName": itemName});
+  }
+
+  checkValue(String id1, id2) async {
+    await itemReference
+        .doc(id1)
+        .collection("ShoppingItem")
+        .doc(id2)
+        .update({"checkValue": cb});
   }
 
   @override
@@ -79,6 +96,7 @@ class _shopping_listState extends State<shopping_list> {
                     ),
                     SizedBox(height: 20.0, width: 20.0),
                     TextFormField(
+                      decoration: textInputDecoration,
                       validator: (val) =>
                           val.isEmpty ? 'Enter a new item' : null,
                       onChanged: (val) => setState(() => itemName = val),
@@ -91,7 +109,7 @@ class _shopping_listState extends State<shopping_list> {
                         ),
                         child: Text('Add'),
                         onPressed: () {
-                          addItem(widget.argument[0]);
+                          addItem(widget.argument[0], widget.argument[1]);
 
                           Navigator.of(context).pop();
                           //will remove alert dialog after adding
@@ -114,8 +132,10 @@ class _shopping_listState extends State<shopping_list> {
         elevation: 0.0,
         //list of widget to display in a row after title
         actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.add_comment_outlined),
+          TextButton.icon(
+            label: Text("Add"),
+            icon: const Icon(Icons.add),
+            style: TextButton.styleFrom(primary: Colors.white),
             onPressed: () => _showSettingsPanel(),
           )
         ],
@@ -125,7 +145,7 @@ class _shopping_listState extends State<shopping_list> {
               .collection("MyLists")
               .doc(widget.argument[0])
               .collection("ShoppingItem")
-              .orderBy("itemName")
+              .orderBy("created")
               .snapshots(),
           builder: (context, snapshots) {
             if (snapshots.hasData && !snapshots.hasError) {
@@ -138,10 +158,21 @@ class _shopping_listState extends State<shopping_list> {
                   itemCount: snapshots.data.docs
                       .length, //decides number of time itemBuilder called
                   itemBuilder: (context, index) {
+                    bool isChecked = snapshots.data.docs[index]['checkValue'];
                     return Card(
                       color: Colors.amberAccent[100],
                       margin: EdgeInsets.all(2), //space between each tile
                       child: ListTile(
+                        leading: Checkbox(
+                          value: isChecked,
+                          onChanged: (bool value) {
+                            setState(() {
+                              cb = value;
+                              checkValue(widget.argument[0],
+                                  snapshots.data.docs[index].id);
+                            });
+                          },
+                        ),
                         title: Text(
                           snapshots.data.docs[index]['itemName'],
                         ),
@@ -156,10 +187,10 @@ class _shopping_listState extends State<shopping_list> {
                                 builder: (BuildContext context) {
                                   return AlertDialog(
                                     shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(8)),
+                                        borderRadius: BorderRadius.circular(8)),
                                     title: Text("Modify Item"),
                                     content: TextFormField(
+                                      decoration: textInputDecoration,
                                       initialValue: snapshots.data.docs[index]
                                           ['itemName'],
                                       onChanged: (String value) {
