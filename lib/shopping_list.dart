@@ -19,10 +19,9 @@ class _shopping_listState extends State<shopping_list> {
   CollectionReference itemReference =
       FirebaseFirestore.instance.collection("MyLists");
 
-  CollectionReference historyReference =
-  FirebaseFirestore.instance.collection("HistoryList");
 
-  addItem(String id, String shopList) async {
+
+  addItem(String id) async {
     //Map
     Map<String, dynamic> items = {
       "itemName": itemName,
@@ -31,13 +30,6 @@ class _shopping_listState extends State<shopping_list> {
     };
     await itemReference
         .doc(id)
-        .collection("ShoppingItem")
-        .add(items)
-        .whenComplete(() {
-      print("$itemName created");
-    });
-    await historyReference
-        .doc(shopList)
         .collection("ShoppingItem")
         .add(items)
         .whenComplete(() {
@@ -109,7 +101,7 @@ class _shopping_listState extends State<shopping_list> {
                         ),
                         child: Text('Add'),
                         onPressed: () {
-                          addItem(widget.argument[0], widget.argument[1]);
+                          addItem(widget.argument[0]);
 
                           Navigator.of(context).pop();
                           //will remove alert dialog after adding

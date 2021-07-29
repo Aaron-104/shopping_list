@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
 import 'loading.dart';
 
 class history extends StatefulWidget {
@@ -15,15 +14,39 @@ class _historyState extends State<history> {
   CollectionReference historyReference =
   FirebaseFirestore.instance.collection("HistoryList");
 
+  CollectionReference listReference =
+  FirebaseFirestore.instance.collection("MyLists");
+
+  Future restoreShopList(String id, String listName) async {
+
+    await listReference.doc(id).set(
+        {"shoppingList": listName, "created": FieldValue.serverTimestamp()});
+
+    await historyReference.doc(id).collection("ShoppingItem").get().then((value) {
+      value.docs.forEach((element) async {
+        await listReference.doc(id).collection("ShoppingItem").add({
+          'itemName': element['itemName'] ?? " ",
+          'created': element['created'] ?? " ",
+          'checkValue': false,
+        });
+        element.reference.delete();
+      });
+    });
+
+    historyReference.doc(id).delete().whenComplete(() {
+      print("$id deleted");
+    });
+  }
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
         title: Text("List History"),
         backgroundColor: Colors.amber[600],
       ),
-      //NEED USE streambuilder to use firestore instance
+
       body: StreamBuilder(
           stream: FirebaseFirestore.instance.collection("HistoryList").snapshots(),
           builder: (context, snapshots) {
@@ -46,19 +69,50 @@ class _historyState extends State<history> {
                         Text(snapshots.data.docs[index]["shoppingList"]),
                         trailing: IconButton(
                             icon: Icon(
-                              Icons.keyboard_return_outlined,
-                              color: Colors.amberAccent[700],
+                              Icons.restore_from_trash_outlined,
+                              color: Colors.black,
                             ),
-                            onPressed: () async {
+                            onPressed: () {
+                              showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              8)),
+                                      title: Text(
+                                          "Confirm Restore?"),
+                                      actions: <Widget>[
+                                        ElevatedButton(
+                                          onPressed: () async {
+                                            await restoreShopList(
+                                                snapshots.data.docs[index].id,
+                                                snapshots.data
+                                                    .docs[index]["shoppingList"]);
+                                            Navigator.of(context).pop();
+                                          },
+                                          //will remove alert dialog after adding
 
-                            }),
-                        onTap: () {
-                          Navigator.pushNamed(context, '/shopping_list',
-                              arguments: [
-                                snapshots.data.docs[index].id,
-                                snapshots.data.docs[index]["shoppingList"]
-                              ]);
-                        },
+                                          child: Text("Confirm"),
+                                            style: ElevatedButton.styleFrom(
+                                              primary: Colors.amber[600],
+                                          ),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => print('cancel'),
+                                          child: Text(
+                                              "Cancel",
+                                            style: TextStyle(
+                                              color: Colors.black,
+                                            )
+                                          ),
+                                        )
+                                      ],
+                                    );
+                                  });
+                            }
+
+                            ),
                       ),
                     );
                   });

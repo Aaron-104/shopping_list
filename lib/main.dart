@@ -3,8 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shopping_list/loading.dart';
 import 'package:shopping_list/shopping_list.dart';
-
 import 'decoration.dart';
+import 'history.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +15,7 @@ void main() async {
       '/': (context) => MyApp(),
       '/shopping_list': (context) =>
           shopping_list(argument: ModalRoute.of(context).settings.arguments),
+      '/history': (context) => history(),
     },
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
@@ -33,28 +34,39 @@ class _MyAppState extends State<MyApp> {
   String shoppingList;
   String deletedList;
 
-  CollectionReference todoReference =
+  CollectionReference listReference =
       FirebaseFirestore.instance.collection("MyLists");
 
   CollectionReference historyReference =
       FirebaseFirestore.instance.collection("HistoryList");
 
-  createTodos() async {
+  addShopList() async {
     //Map
     Map<String, dynamic> shopList = {
       "shoppingList": shoppingList,
       "created": FieldValue.serverTimestamp()
     };
-    await todoReference.add(shopList).whenComplete(() {
-      print("$shoppingList created");
-    });
-    await historyReference.doc(shoppingList).set(shopList).whenComplete(() {
+    await listReference.add(shopList).whenComplete(() {
       print("$shoppingList created");
     });
   }
 
-  Future deleteTodos(String id) async {
-    await todoReference.doc(id).delete().whenComplete(() {
+  Future deleteShopList(String id, String listName) async {
+    await historyReference.doc(id).set(
+        {"shoppingList": listName, "created": FieldValue.serverTimestamp()});
+
+    await listReference.doc(id).collection("ShoppingItem").get().then((value) {
+      value.docs.forEach((element) async {
+        await historyReference.doc(id).collection("ShoppingItem").add({
+          'itemName': element['itemName'] ?? " ",
+          'created': element['created'] ?? " ",
+          'checkValue': false,
+        });
+        element.reference.delete();
+      });
+    });
+
+    listReference.doc(id).delete().whenComplete(() {
       print("$id deleted");
     });
   }
@@ -66,6 +78,14 @@ class _MyAppState extends State<MyApp> {
       appBar: AppBar(
         title: Text("Shopping List"),
         backgroundColor: Colors.amber[600],
+        actions: <Widget>[
+          TextButton.icon(
+            label: Text("History"),
+            icon: const Icon(Icons.history),
+            style: TextButton.styleFrom(primary: Colors.white),
+            onPressed: () => Navigator.pushNamed(context, '/history'),
+          )
+        ],
       ),
       floatingActionButton: FloatingActionButton(
           backgroundColor: Colors.amber[600],
@@ -87,7 +107,7 @@ class _MyAppState extends State<MyApp> {
                     actions: <Widget>[
                       TextButton(
                         onPressed: () {
-                          createTodos();
+                          addShopList();
 
                           Navigator.of(context).pop();
                           //will remove alert dialog after adding
@@ -131,13 +151,44 @@ class _MyAppState extends State<MyApp> {
                       child: ListTile(
                         title: Text(snapshots.data.docs[index]["shoppingList"]),
                         trailing: IconButton(
-                            icon: Icon(
-                              Icons.delete,
-                              color: Colors.amberAccent[700],
-                            ),
-                            onPressed: () async {
-                              await deleteTodos(snapshots.data.docs[index].id);
-                            }),
+                          icon: Icon(
+                            Icons.delete,
+                            color: Colors.amberAccent[700],
+                          ),
+                          onPressed: () {
+                            showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8)),
+                                    title: Text("Move to History?"),
+                                    actions: <Widget>[
+                                      TextButton(
+                                        onPressed: () async {
+                                          await deleteShopList(
+                                              snapshots.data.docs[index].id,
+                                              snapshots.data.docs[index]
+                                                  ["shoppingList"]);
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: Text(
+                                            'Okay',
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                        //will remove alert dialog after adding
+                                      ),
+                                    ],
+                                  );
+                                });
+                          },
+                        ),
+                        // onPressed: () async {
+                        //   await deleteShopList(snapshots.data.docs[index].id,
+                        //       snapshots.data.docs[index]["shoppingList"]);
+                        // }),
                         onTap: () {
                           Navigator.pushNamed(context, '/shopping_list',
                               arguments: [
