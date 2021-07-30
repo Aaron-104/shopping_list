@@ -33,6 +33,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String shoppingList;
   String deletedList;
+  final _formKey = GlobalKey<FormState>();
 
   CollectionReference listReference =
       FirebaseFirestore.instance.collection("MyLists");
@@ -40,16 +41,21 @@ class _MyAppState extends State<MyApp> {
   CollectionReference historyReference =
       FirebaseFirestore.instance.collection("HistoryList");
 
+
+  //method to add new shopping list the Firestore database
   addShopList() async {
     //Map
     Map<String, dynamic> shopList = {
       "shoppingList": shoppingList,
       "created": FieldValue.serverTimestamp()
+      //shopping list created time
     };
     await listReference.add(shopList).whenComplete(() {
       print("$shoppingList created");
+      //printed in console
     });
   }
+
 
   Future deleteShopList(String id, String listName) async {
     await historyReference.doc(id).set(
@@ -70,6 +76,7 @@ class _MyAppState extends State<MyApp> {
       print("$id deleted");
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -93,33 +100,44 @@ class _MyAppState extends State<MyApp> {
             showDialog(
                 context: context,
                 builder: (BuildContext context) {
-                  return AlertDialog(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                    title: Text("Add Shopping List"),
-                    content: TextField(
-                      decoration: textInputDecoration,
-                      onChanged: (String value) {
-                        //After insert value
-                        shoppingList = value;
-                      },
-                    ),
-                    actions: <Widget>[
-                      TextButton(
-                        onPressed: () {
-                          addShopList();
-
-                          Navigator.of(context).pop();
-                          //will remove alert dialog after adding
+                  return Form(
+                    key: _formKey,
+                    child: AlertDialog(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8)),
+                      title: Text("Add Shopping List"),
+                      content: TextFormField(
+                        decoration: textInputDecoration,
+                        validator: (val) {
+                          if (val == null || val.isEmpty) {
+                            return 'Please do not leave empty';
+                          }
+                          return null;
                         },
-                        child: Text(
-                          "Add",
-                          style: TextStyle(
-                            color: Colors.black,
+                        onChanged: (val) {
+                          //After insert value
+                          shoppingList = val;
+                        },
+                      ),
+                      actions: <Widget>[
+                        TextButton(
+                          onPressed: () {
+                            if(_formKey.currentState.validate()){
+                              addShopList();
+                              Navigator.of(context).pop();
+                              //will remove alert dialog after adding
+                            }
+
+                          },
+                          child: Text(
+                            "Add",
+                            style: TextStyle(
+                              color: Colors.black,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   );
                 });
           },
@@ -140,8 +158,9 @@ class _MyAppState extends State<MyApp> {
               return ListView.builder(
                   shrinkWrap: true,
                   itemCount: snapshots.data.docs.length,
+                  //decides number of time itemBuilder called
                   itemBuilder: (context, index) {
-                    //DocumentSnapshot documentSnapshot = snapshots.data.docs[index];
+
                     return Card(
                       color: Colors.amberAccent[100],
                       elevation: 4, //elevation of each tile

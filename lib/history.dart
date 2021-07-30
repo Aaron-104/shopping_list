@@ -57,7 +57,6 @@ class _historyState extends State<history> {
                   shrinkWrap: true,
                   itemCount: snapshots.data.docs.length,
                   itemBuilder: (context, index) {
-                    //DocumentSnapshot documentSnapshot = snapshots.data.docs[index];
                     return Card(
                       color: Colors.amberAccent[100],
                       elevation: 4, //elevation of each tile

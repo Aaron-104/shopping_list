@@ -89,8 +89,6 @@ class _shopping_listState extends State<shopping_list> {
                     SizedBox(height: 20.0, width: 20.0),
                     TextFormField(
                       decoration: textInputDecoration,
-                      validator: (val) =>
-                          val.isEmpty ? 'Enter a new item' : null,
                       onChanged: (val) => setState(() => itemName = val),
                     ),
                     Padding(
@@ -148,7 +146,7 @@ class _shopping_listState extends State<shopping_list> {
               return ListView.builder(
                   shrinkWrap: true,
                   itemCount: snapshots.data.docs
-                      .length, //decides number of time itemBuilder called
+                      .length,
                   itemBuilder: (context, index) {
                     bool isChecked = snapshots.data.docs[index]['checkValue'];
                     return Card(
