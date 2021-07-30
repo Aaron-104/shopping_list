@@ -3,26 +3,28 @@ import 'package:flutter/material.dart';
 import 'loading.dart';
 
 class history extends StatefulWidget {
-
-
   @override
   _historyState createState() => _historyState();
 }
 
 class _historyState extends State<history> {
-
   CollectionReference historyReference =
-  FirebaseFirestore.instance.collection("HistoryList");
+      FirebaseFirestore.instance.collection("HistoryList");
 
   CollectionReference listReference =
-  FirebaseFirestore.instance.collection("MyLists");
+      FirebaseFirestore.instance.collection("MyLists");
 
+  //method to restore the selected shopping list
   Future restoreShopList(String id, String listName) async {
-
     await listReference.doc(id).set(
         {"shoppingList": listName, "created": FieldValue.serverTimestamp()});
 
-    await historyReference.doc(id).collection("ShoppingItem").get().then((value) {
+    await historyReference
+        .doc(id)
+        .collection("ShoppingItem")
+        .get()
+        .then((value) {
+          //retrieve each element and store it to another collection
       value.docs.forEach((element) async {
         await listReference.doc(id).collection("ShoppingItem").add({
           'itemName': element['itemName'] ?? " ",
@@ -37,18 +39,18 @@ class _historyState extends State<history> {
       print("$id deleted");
     });
   }
+
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
         title: Text("List History"),
         backgroundColor: Colors.amber[600],
       ),
-
       body: StreamBuilder(
-          stream: FirebaseFirestore.instance.collection("HistoryList").snapshots(),
+          stream:
+              FirebaseFirestore.instance.collection("HistoryList").snapshots(),
           builder: (context, snapshots) {
             if (snapshots.hasData && !snapshots.hasError) {
               print("yes");
@@ -64,8 +66,7 @@ class _historyState extends State<history> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                       child: ListTile(
-                        title:
-                        Text(snapshots.data.docs[index]["shoppingList"]),
+                        title: Text(snapshots.data.docs[index]["shoppingList"]),
                         trailing: IconButton(
                             icon: Icon(
                               Icons.restore_from_trash_outlined,
@@ -77,41 +78,40 @@ class _historyState extends State<history> {
                                   builder: (BuildContext context) {
                                     return AlertDialog(
                                       shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              8)),
-                                      title: Text(
-                                          "Confirm Restore?"),
+                                          borderRadius:
+                                              BorderRadius.circular(8)),
+                                      title: Text("Confirm Restore?"),
                                       actions: <Widget>[
                                         ElevatedButton(
                                           onPressed: () async {
                                             await restoreShopList(
                                                 snapshots.data.docs[index].id,
-                                                snapshots.data
-                                                    .docs[index]["shoppingList"]);
+                                                snapshots.data.docs[index]
+                                                    ["shoppingList"]);
                                             Navigator.of(context).pop();
                                           },
                                           //will remove alert dialog after adding
 
                                           child: Text("Confirm"),
-                                            style: ElevatedButton.styleFrom(
-                                              primary: Colors.amber[600],
+                                          style: ElevatedButton.styleFrom(
+                                            primary: Colors.amber[600],
                                           ),
                                         ),
                                         TextButton(
-                                          onPressed: () => print('cancel'),
-                                          child: Text(
-                                              "Cancel",
-                                            style: TextStyle(
-                                              color: Colors.black,
-                                            )
-                                          ),
+                                          onPressed: () {
+                                            print('cancel');
+                                            Navigator.of(context).pop();
+                                          },
+                                          child: Text("Cancel",
+                                              style: TextStyle(
+                                                color: Colors.black,
+                                              )),
+
                                         )
                                       ],
                                     );
                                   });
-                            }
-
-                            ),
+                            }),
                       ),
                     );
                   });
@@ -122,4 +122,3 @@ class _historyState extends State<history> {
     );
   }
 }
-

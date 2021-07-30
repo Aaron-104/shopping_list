@@ -19,9 +19,7 @@ void main() async {
     },
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
-        brightness: Brightness.light,
-        primaryColor: Colors.blue,
-        accentColor: Colors.orange),
+        brightness: Brightness.light),
   ));
 }
 
@@ -31,10 +29,11 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+
   String shoppingList;
-  String deletedList;
   final _formKey = GlobalKey<FormState>();
 
+  //Creating Collection Reference for each collection
   CollectionReference listReference =
       FirebaseFirestore.instance.collection("MyLists");
 
@@ -42,7 +41,7 @@ class _MyAppState extends State<MyApp> {
       FirebaseFirestore.instance.collection("HistoryList");
 
 
-  //method to add new shopping list the Firestore database
+  //method to add new shopping list database
   addShopList() async {
     //Map
     Map<String, dynamic> shopList = {
@@ -56,7 +55,7 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-
+  //method to delete and move shopping list to history
   Future deleteShopList(String id, String listName) async {
     await historyReference.doc(id).set(
         {"shoppingList": listName, "created": FieldValue.serverTimestamp()});
@@ -145,7 +144,8 @@ class _MyAppState extends State<MyApp> {
             Icons.add,
             color: Colors.white,
           )),
-      //NEED USE streambuilder to use firestore instance
+
+      //use StreamBuilder to use Firestore instance
       body: StreamBuilder(
           stream: FirebaseFirestore.instance
               .collection("MyLists")
@@ -153,7 +153,6 @@ class _MyAppState extends State<MyApp> {
               .snapshots(),
           builder: (context, snapshots) {
             if (snapshots.hasData && !snapshots.hasError) {
-              print("yes");
               print(snapshots.data.docs.length);
               return ListView.builder(
                   shrinkWrap: true,
@@ -183,7 +182,7 @@ class _MyAppState extends State<MyApp> {
                                         borderRadius: BorderRadius.circular(8)),
                                     title: Text("Move to History?"),
                                     actions: <Widget>[
-                                      TextButton(
+                                      ElevatedButton(
                                         onPressed: () async {
                                           await deleteShopList(
                                               snapshots.data.docs[index].id,
@@ -192,22 +191,27 @@ class _MyAppState extends State<MyApp> {
                                           Navigator.of(context).pop();
                                         },
                                         child: Text(
-                                            'Okay',
-                                          style: TextStyle(
-                                            color: Colors.black,
+                                            'Confirm'
                                           ),
-                                        ),
-                                        //will remove alert dialog after adding
+                                          style: ElevatedButton.styleFrom(
+                                            primary: Colors.amber[600],
+                                          ),
                                       ),
+                                      TextButton(
+                                        onPressed: () {
+                                          print('cancel');
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: Text("Cancel",
+                                            style: TextStyle(
+                                              color: Colors.black,
+                                            )),
+                                      )
                                     ],
                                   );
                                 });
                           },
                         ),
-                        // onPressed: () async {
-                        //   await deleteShopList(snapshots.data.docs[index].id,
-                        //       snapshots.data.docs[index]["shoppingList"]);
-                        // }),
                         onTap: () {
                           Navigator.pushNamed(context, '/shopping_list',
                               arguments: [

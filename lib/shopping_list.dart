@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shopping_list/loading.dart';
-
 import 'decoration.dart';
 
 class shopping_list extends StatefulWidget {
@@ -22,7 +21,6 @@ class _shopping_listState extends State<shopping_list> {
 
 
   addItem(String id) async {
-    //Map
     Map<String, dynamic> items = {
       "itemName": itemName,
       "created": FieldValue.serverTimestamp(),
@@ -139,7 +137,6 @@ class _shopping_listState extends State<shopping_list> {
               .snapshots(),
           builder: (context, snapshots) {
             if (snapshots.hasData && !snapshots.hasError) {
-              print("yes");
               print(snapshots
                   .data.docs.length); //to view how many items via console
 

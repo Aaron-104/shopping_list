@@ -7,8 +7,8 @@ class Loading extends StatelessWidget {
     return Container(
         color: Colors.brown[100],
         child: Center(
+          //a type of loading animation form the flutter_spinkit package
             child: SpinKitDualRing(
-          //can select variety from spinking flutter page************
           color: Colors.amber[600],
           size: 50.0,
         )));
